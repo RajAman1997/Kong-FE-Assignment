@@ -1,44 +1,123 @@
-import { vi, describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
-import ServiceCatalog from './ServiceCatalog.vue'
-import servicesData from '../../mocks/services'
+import { mount, flushPromises } from '@vue/test-utils'
+import { it, expect, beforeEach, vi } from 'vitest'
+import ServiceCatalog from '@/components/ServiceCatalog.vue'
 
-// Mock the axios module for fetching API services
-const mockedResponses = new Map()
-  .set('/api/services', vi.fn(() => ({
-    data: servicesData,
-  })))
+const mockServices = [
+  { id: 1, name: 'Service A', description: 'Desc', type: 'api', versions: [{ v: 1 }] },
+  { id: 2, name: 'Service B', description: 'Desc', type: 'api', versions: [] },
+  { id: 3, name: 'Another', description: 'Desc', type: 'api', versions: [{ v: 2 }] }
+]
 
-vi.mock('axios', async () => {
-  const actual: any = await vi.importActual('axios')
-  return {
-    default: {
-      ...actual.default,
-      // Mock get request responses
-      get: (url: string) => vi.fn().mockResolvedValue(mockedResponses.get(url) !== undefined
-        ? mockedResponses.get(url)()
-        : undefined)(),
-    },
-  }
+beforeEach(() => {
+  global.fetch = vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(mockServices)
+    })
+  ) as any
+
+  vi.spyOn(window, 'alert').mockImplementation(() => {})
 })
 
-// Example component test for ServiceCatalog.vue
-describe('ServiceCatalog', () => {
-  it('shows the search input', async () => {
-    // No `mockedResponses` modification needed; just use the default mocked response
-    const wrapper = mount(ServiceCatalog)
-
-    expect(wrapper.findTestId('search-input').isVisible()).toBe(true)
+const mountPage = () =>
+  mount(ServiceCatalog, {
+    attachTo: document.body
   })
 
-  it('properly handles no services returned from the API', async () => {
-    // Provide a custom `mockedResponses` response payload instead of using the default mocked response
-    mockedResponses.get('/api/services').mockReturnValue({
-      data: [],
-    })
+const wait = async () => {
+  await flushPromises()
+  await Promise.resolve()
+}
 
-    const wrapper = mount(ServiceCatalog)
+it('renders loading spinner initially', async () => {
+  global.fetch = vi.fn(() => new Promise(() => {}))
 
-    expect(wrapper.findTestId('no-results').isVisible()).toBe(true)
-  })
+  const wrapper = mountPage()
+  await wrapper.vm.$nextTick()
+
+  expect(wrapper.find('.spinner').exists()).toBe(true)
+})
+
+it('search filters the list', async () => {
+  const wrapper = mountPage()
+  await wait()
+
+  wrapper.vm.handleSearchInput("Service A")
+  await wait()
+
+  const cards = wrapper.findAll('.service-catalog-card')
+  expect(cards.length).toBe(1)
+  expect(cards[0].text()).toContain('Service A')
+})
+
+it('opens version dialog when clicking a service with versions', async () => {
+  const wrapper = mountPage()
+  await wait()
+
+  const first = wrapper.findAll('.service-catalog-card')[0]
+  await first.trigger('click')
+  await wait()
+
+  const dialog = document.querySelector('[data-test="version-dialog"]')
+  expect(dialog).not.toBeNull()
+})
+
+it('closes version dialog when update:modelValue emitted', async () => {
+  const wrapper = mountPage()
+  await wait()
+
+  await wrapper.findAll('.service-catalog-card')[0].trigger('click')
+  await wait()
+
+  const component = wrapper.findComponent({ name: 'VersionDetailsCard' })
+  expect(component.exists()).toBe(true)
+
+  component.vm.$emit('update:modelValue', false)
+  await wait()
+
+  const dialog = document.body.querySelector('[data-test-version-dialog]')
+  expect(dialog).toBeNull()
+})
+
+it('pagination works (next / prev)', async () => {
+  const wrapper = mountPage()
+  await wait()
+
+  wrapper.vm.serviceList = Array.from({ length: 20 }).map((_, i) => ({
+    id: i,
+    name: `Service ${i}`,
+    description: 'x',
+    type: 'api',
+    versions: []
+  }))
+
+  wrapper.vm.pagination.totalPages = Math.ceil(wrapper.vm.serviceList.length / wrapper.vm.pagination.itemsPerPage)
+  await wait()
+
+  const allButtons = wrapper.findAllComponents({ name: 'Button' })
+  const nextBtn = allButtons.find(b => b.props().label === '→')
+  const prevBtn = allButtons.find(b => b.props().label === '←')
+
+  if (!nextBtn || !prevBtn) {
+    throw new Error('Pagination buttons not found')
+  }
+
+  expect(wrapper.vm.pagination.currentPage).toBe(1)
+  await nextBtn.trigger('click')
+  await wait()
+  expect(wrapper.vm.pagination.currentPage).toBe(2)
+
+  await prevBtn.trigger('click')
+  await wait()
+  expect(wrapper.vm.pagination.currentPage).toBe(1)
+})
+
+it('create service button triggers alert', async () => {
+  const wrapper = mountPage()
+  await wait()
+
+  const createBtn = wrapper.find('.create-btn')
+  await createBtn.trigger('click')
+
+  expect(window.alert).toHaveBeenCalledWith('Service Package button clicked!')
 })
