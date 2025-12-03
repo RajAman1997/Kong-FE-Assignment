@@ -54,6 +54,7 @@ import ServiceCatalogCard from '@/components/serviceCatalogCard/ServiceCatalogCa
 import VersionDetailsCard from '@/components/versionDetailsCard/versionDetailsCard.vue'
 import type { Service } from '@/types/service.interface'
 import { endpoints } from '@/constants/api-url'
+import { fetchServiceCatalog } from '@/services/cardService.api'
 
 const searchQuery = ref('')
 const btn = reactive({
@@ -96,14 +97,7 @@ const disableNext = computed(() => pagination.currentPage === getTotalPages.valu
 const fetchServices = async () => {
   loading.value = true
   try {
-    const res = await fetch(endpoints.services)
-
-    if(!res.ok) {
-      throw new Error('Failed to fetch services')
-    }
-
-    const data = await res.json()
-    serviceList.value = data
+    serviceList.value = await fetchServiceCatalog()
     pagination.totalPages = Math.ceil(data.length / pagination.itemsPerPage)
   } catch (err) {
     error.value = (err as Error).message
@@ -118,7 +112,7 @@ const handleSearchInput = (value: string) => {
 }
 
 const handleNextPage = () => {
-  if (pagination.currentPage < pagination.totalPages) {
+  if (pagination.currentPage < getTotalPages.value) {
     pagination.currentPage++;
   }
 }
