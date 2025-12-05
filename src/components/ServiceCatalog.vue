@@ -176,7 +176,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 .service-catalog {
   gap: 1.5rem;
-  margin: var(--header-height) auto;
+  margin-top: var(--header-height);
   padding: 3.3125rem 2.5rem 2.5rem 2.5rem;
 
   & > div {
