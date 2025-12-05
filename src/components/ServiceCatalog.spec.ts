@@ -5,15 +5,15 @@ import ServiceCatalog from '@/components/ServiceCatalog.vue'
 const mockServices = [
   { id: 1, name: 'Service A', description: 'Desc', type: 'api', versions: [{ v: 1 }] },
   { id: 2, name: 'Service B', description: 'Desc', type: 'api', versions: [] },
-  { id: 3, name: 'Another', description: 'Desc', type: 'api', versions: [{ v: 2 }] }
+  { id: 3, name: 'Another', description: 'Desc', type: 'api', versions: [{ v: 2 }] },
 ]
 
 beforeEach(() => {
   global.fetch = vi.fn(() =>
     Promise.resolve({
       ok: true,
-      json: () => Promise.resolve(mockServices)
-    })
+      json: () => Promise.resolve(mockServices),
+    }),
   ) as any
 
   vi.spyOn(window, 'alert').mockImplementation(() => {})
@@ -21,7 +21,7 @@ beforeEach(() => {
 
 const mountPage = () =>
   mount(ServiceCatalog, {
-    attachTo: document.body
+    attachTo: document.body,
   })
 
 const wait = async () => {
@@ -42,7 +42,7 @@ it('search filters the list', async () => {
   const wrapper = mountPage()
   await wait()
 
-  wrapper.vm.handleSearchInput("Service A")
+  await wrapper.find('input').setValue('Service A')
   await wait()
 
   const cards = wrapper.findAll('.service-catalog-card')
@@ -83,18 +83,20 @@ it('pagination works (next / prev)', async () => {
   const wrapper = mountPage()
   await wait()
 
-  wrapper.vm.serviceList = Array.from({ length: 20 }).map((_, i) => ({
+  const vm = wrapper.vm as any
+
+  vm.serviceList = Array.from({ length: 20 }).map((_, i) => ({
     id: i,
     name: `Service ${i}`,
     description: 'x',
     type: 'api',
-    versions: []
+    versions: [],
   }))
 
-  wrapper.vm.pagination.totalPages = Math.ceil(wrapper.vm.serviceList.length / wrapper.vm.pagination.itemsPerPage)
+  vm.pagination.totalPages = Math.ceil(vm.serviceList.length / vm.pagination.itemsPerPage)
   await wait()
 
-  const allButtons = wrapper.findAllComponents({ name: 'Button' })
+  const allButtons = wrapper.findAllComponents({ name: 'BaseButton' })
   const nextBtn = allButtons.find(b => b.props().label === '→')
   const prevBtn = allButtons.find(b => b.props().label === '←')
 
@@ -102,14 +104,14 @@ it('pagination works (next / prev)', async () => {
     throw new Error('Pagination buttons not found')
   }
 
-  expect(wrapper.vm.pagination.currentPage).toBe(1)
+  expect(vm.pagination.currentPage).toBe(1)
   await nextBtn.trigger('click')
   await wait()
-  expect(wrapper.vm.pagination.currentPage).toBe(2)
+  expect(vm.pagination.currentPage).toBe(2)
 
   await prevBtn.trigger('click')
   await wait()
-  expect(wrapper.vm.pagination.currentPage).toBe(1)
+  expect(vm.pagination.currentPage).toBe(1)
 })
 
 it('create service button triggers alert', async () => {

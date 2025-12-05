@@ -1,10 +1,10 @@
 <template>
-  <Header />
+  <ServiceHeader />
   <ServiceCatalog />
 </template>
 
 <script setup lang="ts">
-import Header from '@/components/header/header.vue'
+import ServiceHeader from '@/components/header/Header.vue'
 import ServiceCatalog from '@/components/ServiceCatalog.vue'
 
 </script>

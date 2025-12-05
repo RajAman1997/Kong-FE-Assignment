@@ -1,21 +1,27 @@
 <template>
-    <button>
-      <img :src="props.imgSrc" alt="add" v-if="props.imgSrc" />
-      {{ props.label }}
-    </button>
+  <button>
+    <img
+      v-if="props.imgSrc"
+      alt="add"
+      :src="props.imgSrc"
+    >
+    {{ props.label }}
+  </button>
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue';
+defineOptions({
+  name: 'BaseButton',
+})
 
 const props = defineProps({
   label: {
     type: String,
-    default: ''
+    default: '',
   },
   imgSrc: {
     type: String,
-    default: ''
-  }
-});
+    default: '',
+  },
+})
 </script>

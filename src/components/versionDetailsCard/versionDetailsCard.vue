@@ -1,22 +1,53 @@
 <template>
-  <div v-if="modelValue" class="backdrop flex align-center justify-center" @click="close">
-    <div class="dialog bg-white flex flex-direction-column" @click.stop>
-      <div class="title font-bold">Versions ({{ getVersionCount }})</div>
+  <div
+    v-if="modelValue"
+    class="backdrop flex align-center justify-center"
+    @click="close"
+  >
+    <div
+      class="dialog bg-white flex flex-direction-column"
+      @click.stop
+    >
+      <div class="title font-bold">
+        Versions ({{ getVersionCount }})
+      </div>
       <div class="content">
-        <div class="version-details flex align-center" v-for="(version, index) in service.versions" :key="index">
-          <div class="version font-bold">v{{ version.name }}</div>
-          <div class="description">{{ version.description }}</div>
+        <div
+          v-for="(version, index) in service.versions"
+          :key="index"
+          class="version-details flex align-center"
+        >
+          <div class="version font-bold">
+            v{{ version.name }}
+          </div>
+          <div class="description">
+            {{ version.description }}
+          </div>
           <div class="flex full-width justify-between align-center">
             <div class="metadata">
-                <span class="protocol">HTTP</span>
-                <span class="service-type">{{ service.type }}</span>
+              <span class="protocol">HTTP</span>
+              <span class="service-type">{{ service.type }}</span>
             </div>
-            <div class="publisher flex align-center" v-if="version?.developer">
-                <img v-if="version.developer.avatar" :src="version.developer.avatar" alt="Publisher Logo" />
-                <div>
-                    <div v-if="version.developer.name" class="publisher-name text-primary">{{ getName(version.developer.name) }}</div>
-                    <div class="publisher-date">{{ timeAgo(version.updated_at) }}</div>
+            <div
+              v-if="version?.developer"
+              class="publisher flex align-center"
+            >
+              <img
+                v-if="version.developer.avatar"
+                alt="Publisher Logo"
+                :src="version.developer.avatar"
+              >
+              <div>
+                <div
+                  v-if="version.developer.name"
+                  class="publisher-name text-primary"
+                >
+                  {{ getName(version.developer.name) }}
                 </div>
+                <div class="publisher-date">
+                  {{ timeAgo(version.updated_at) }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -26,43 +57,43 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, computed } from 'vue';
-import type { Service } from '@/types/service.interface';
-import { useTimeAgo } from "@/composables/date";
+import { defineProps, defineEmits, computed } from 'vue'
+import type { Service } from '@/types/service.interface'
+import { useTimeAgo } from '@/composables/date'
 
-const { timeAgo } = useTimeAgo();
+const { timeAgo } = useTimeAgo()
 
 const props = defineProps<{
-  modelValue: Boolean,
+  modelValue: boolean
   service: Service
 }>()
 
-const emit = defineEmits(["update:modelValue"])
+const emit = defineEmits(['update:modelValue'])
 
 const getVersionCount = computed(() => props.service.versions.length)
 
-const close = () => emit("update:modelValue")
+const close = () => emit('update:modelValue')
 
 const getName = (name: string) => {
-  return name.split(' ')[0] + ' ' + name.split(' ')[1].charAt(0) + '.';
+  return name.split(' ')[0] + ' ' + name.split(' ')[1].charAt(0) + '.'
 }
 </script>
 
 <style lang="scss" scoped>
 .backdrop {
-  position: fixed;
-  inset: 0;
   background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  position: fixed;
   z-index: 100;
 
   .dialog {
-    padding: 2rem;
     border-radius: 0.25rem;
-    width: 58vw;
-    max-height: 75vh;
-    box-shadow: rgba(0, 0, 0, 0.2);  
-    overflow-y: auto;
+    box-shadow: rgba(0, 0, 0, 0.2);
     gap: 2rem;
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 2rem;
+    width: 58vw;
 
     .title {
       font-size: 1rem;
@@ -75,27 +106,27 @@ const getName = (name: string) => {
     }
 
     .version-details {
+      border-bottom: 0.0625rem solid #F1F1F5;
       gap: 1.5rem;
       padding: 0.5rem 0;
-      border-bottom: 0.0625rem solid #F1F1F5;
 
       .version {
-        font-size: 0.8125rem;
         color: #262626;
-        min-width: 4.0625rem;
+        font-size: 0.8125rem;
         margin: auto 0;
+        min-width: 4.0625rem;
         width: 10vw;
       }
 
       .description {
-        font-size: 0.75rem;
         color: #8A8A8A;
+        font-size: 0.75rem;
         width: 60vw;
       }
 
       .metadata {
-        font-size: 0.625rem;
         color: #1155CB;
+        font-size: 0.625rem;
 
         .protocol {
           background-color: var(--color-bg-primary);
@@ -112,13 +143,13 @@ const getName = (name: string) => {
 
       .publisher {
         gap: 0.5rem;
-        text-align: left;
         min-width: 8vw;
+        text-align: left;
 
         img {
-          width: 1.25rem;
-          height: 1.25rem;
           border-radius: 1.875rem;
+          height: 1.25rem;
+          width: 1.25rem;
         }
 
         .publisher-name {
