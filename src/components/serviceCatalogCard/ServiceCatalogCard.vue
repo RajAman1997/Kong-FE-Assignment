@@ -99,6 +99,10 @@ import { computed } from 'vue'
 import type { Service, Version } from '@/types/service.interface'
 import { Status } from '@/constants/status.enum'
 
+defineOptions({
+  name: 'ServiceCatalogCard',
+})
+
 const props = defineProps<{
   service: Service
 }>()

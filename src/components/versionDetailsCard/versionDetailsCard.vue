@@ -61,6 +61,10 @@ import { computed } from 'vue'
 import type { Service } from '@/types/service.interface'
 import { useTimeAgo } from '@/utils/date'
 
+defineOptions({
+  name: 'VersionDetailsCard',
+})
+
 const { timeAgo } = useTimeAgo()
 
 const props = defineProps<{

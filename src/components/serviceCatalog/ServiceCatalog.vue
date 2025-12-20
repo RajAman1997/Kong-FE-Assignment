@@ -83,6 +83,10 @@ import type { Service } from '@/types/service.interface'
 import { useServiceStore } from '@/stores/service'
 import { usePagination } from '@/composables/usePagination'
 
+defineOptions({
+  name: 'ServiceCatalog',
+})
+
 const serviceStore = useServiceStore()
 const btn = ref({
   label: 'Service Package',
