@@ -1,7 +1,7 @@
 <template>
   <div class="service-catalog">
     <div
-      v-if="!loading"
+      v-if="!serviceStore.loading"
       class="flex flex-direction-column"
     >
       <div class="flex justify-between align-center">
@@ -18,8 +18,7 @@
         </div>
         <div class="flex justify-between align-center actions">
           <InputSearch
-            :model-value="searchQuery"
-            @input="handleSearchInput"
+            v-model="searchQuery"
           />
           <BaseButton
             class="create-btn flex align-center bg-success text-white"
@@ -31,7 +30,7 @@
       </div>
       <div class="service-catalog-list flex">
         <ServiceCatalogCard
-          v-for="service in getServicesForCurrentPage"
+          v-for="service in currentData"
           :key="service.id"
           class="service-catalog-card"
           :class="{ 'cursor-pointer': service.versions.length }"
@@ -48,7 +47,7 @@
             @click="handlePrevPage"
           />
           <span class="current-page">
-            {{ getStartIndex + 1 }} to {{ getEndIndex }} of {{ getTotalServices }} services
+            {{ pageStartCount }} to {{ endIndex }} of {{ getFilteredServices.length }} services
           </span>
           <BaseButton
             class="pagination-btn"
@@ -60,12 +59,7 @@
       </div>
     </div>
 
-    <div
-      v-else
-      class="loading flex align-center justify-center full-width"
-    >
-      <div class="spinner" />
-    </div>
+    <AppSpinner v-else />
     <Teleport to="body">
       <VersionDetailsCard
         v-if="showVersionDetails && clickedService?.versions.length"
@@ -79,80 +73,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import InputSearch from '@/components/search/Search.vue'
 import BaseButton from '@/components/button/Button.vue'
 import ServiceCatalogCard from '@/components/serviceCatalogCard/ServiceCatalogCard.vue'
 import VersionDetailsCard from '@/components/versionDetailsCard/versionDetailsCard.vue'
+import AppSpinner from '@/components/spinner/Spinner.vue'
 import type { Service } from '@/types/service.interface'
-import { fetchServiceCatalog } from '@/services/cardService.api'
+import { useServiceStore } from '@/stores/service'
+import { usePagination } from '@/composables/usePagination'
 
-const searchQuery = ref('')
-const btn = reactive({
+const serviceStore = useServiceStore()
+const btn = ref({
   label: 'Service Package',
   imgSrc: '/plus.svg',
 })
-const serviceList = ref<Service[]>([])
-const error = ref<string | null>(null)
-const loading = ref(false)
+const pageSize = ref(9)
+const searchQuery = ref('')
 const showVersionDetails = ref(false)
 const clickedService = ref<Service | null>(null)
-const pagination = reactive({
-  currentPage: 1,
-  totalPages: 1,
-  itemsPerPage: 9,
-})
 
 const getFilteredServices = computed(() => {
   if (!searchQuery.value) {
-    return serviceList.value
+    return serviceStore.service
   }
-  return serviceList.value.filter((service) => {
-    if (service.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || service.description?.toLowerCase().includes(searchQuery.value.toLowerCase()) || service.type.toLowerCase().includes(searchQuery.value.toLowerCase())) {
-      return true
-    }
+  const searchTerm = searchQuery.value.toLowerCase()
+  return serviceStore.service.filter((service) => {
+    return service.name.toLowerCase().includes(searchTerm) || service.description?.toLowerCase().includes(searchTerm) || service.type.toLowerCase().includes(searchTerm)
   })
 })
-const getStartIndex = computed(() => (pagination.currentPage - 1) * pagination.itemsPerPage)
-const getEndIndex = computed(() => Math.min(getStartIndex.value + pagination.itemsPerPage, getTotalServices.value))
-const getTotalServices = computed(() => getFilteredServices.value.length)
-const getServicesForCurrentPage = computed(() => {
-  const startIndex = getStartIndex.value
-  const endIndex = startIndex + pagination.itemsPerPage
-  return getFilteredServices.value.slice(startIndex, endIndex)
-})
-const getTotalPages = computed(() => Math.ceil(getTotalServices.value / pagination.itemsPerPage))
-const disablePrev = computed(() => pagination.currentPage === 1)
-const disableNext = computed(() => pagination.currentPage === getTotalPages.value)
 
-const fetchServices = async () => {
-  loading.value = true
-  try {
-    serviceList.value = await fetchServiceCatalog()
-    // pagination.totalPages = Math.ceil(data.length / pagination.itemsPerPage)
-  } catch (err) {
-    error.value = (err as Error).message
-  } finally {
-    loading.value = false
-  }
-}
+const { startIndex, endIndex, currentData, disablePrev, disableNext, handleNextPage, handlePrevPage } = usePagination(getFilteredServices, pageSize)
 
-const handleSearchInput = (value: string) => {
-  pagination.currentPage = 1
-  searchQuery.value = value
-}
-
-const handleNextPage = () => {
-  if (pagination.currentPage < getTotalPages.value) {
-    pagination.currentPage++
-  }
-}
-
-const handlePrevPage = () => {
-  if (pagination.currentPage > 1) {
-    pagination.currentPage--
-  }
-}
+const pageStartCount = computed(() => startIndex.value + 1)
 
 const showDialog = (service: Service) => {
   showVersionDetails.value = true
@@ -165,11 +118,11 @@ const closeDialog = () => {
 }
 
 const handleCreateService = () => {
-  alert(`${btn.label} button clicked!`)
+  alert(`${btn.value.label} button clicked!`)
 }
 
 onMounted(() => {
-  fetchServices()
+  serviceStore.fetchService()
 })
 </script>
 
@@ -255,23 +208,5 @@ onMounted(() => {
   .no-underline {
     text-decoration: none;
   }
-
-  .loading {
-    background: rgba(255,255,255,0.8);
-    height: 100%;
-    left: 0;
-    position: fixed;
-    top: 0;
-
-    .spinner {
-      animation: spin 1s linear infinite;
-      border: 6px solid #ddd;
-      border-radius: 50%;
-      border-top-color: #2196f3;
-      height: 50px;
-      width: 50px;
-    }
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
 }
 </style>

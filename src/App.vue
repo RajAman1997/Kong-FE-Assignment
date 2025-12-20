@@ -1,8 +1,13 @@
 <template>
   <main>
+    <ServiceHeader />
     <router-view />
   </main>
 </template>
+
+<script lang="ts" setup>
+import ServiceHeader from '@/components/header/Header.vue'
+</script>
 
 <style lang="scss">
 :root {

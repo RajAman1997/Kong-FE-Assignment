@@ -57,9 +57,9 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, computed } from 'vue'
+import { computed } from 'vue'
 import type { Service } from '@/types/service.interface'
-import { useTimeAgo } from '@/composables/date'
+import { useTimeAgo } from '@/utils/date'
 
 const { timeAgo } = useTimeAgo()
 

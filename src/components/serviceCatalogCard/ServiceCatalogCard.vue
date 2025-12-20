@@ -95,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue'
+import { computed } from 'vue'
 import type { Service, Version } from '@/types/service.interface'
 import { Status } from '@/constants/status.enum'
 
