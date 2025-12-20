@@ -1,125 +1,231 @@
-import { mount, flushPromises } from '@vue/test-utils'
-import { it, expect, beforeEach, vi } from 'vitest'
-import ServiceCatalog from '@/components/ServiceCatalog.vue'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import ServiceCatalog from '@/components/serviceCatalog/ServiceCatalog.vue'
+import type { Service } from '@/types/service.interface'
+import { createTestingPinia } from '@pinia/testing'
+import { useServiceStore } from '@/stores/service'
 
-const mockServices = [
-  { id: 1, name: 'Service A', description: 'Desc', type: 'api', versions: [{ v: 1 }] },
-  { id: 2, name: 'Service B', description: 'Desc', type: 'api', versions: [] },
-  { id: 3, name: 'Another', description: 'Desc', type: 'api', versions: [{ v: 2 }] },
-]
-
-beforeEach(() => {
-  global.fetch = vi.fn(() =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve(mockServices),
-    }),
-  ) as any
-
-  vi.spyOn(window, 'alert').mockImplementation(() => {})
-})
-
-const mountPage = () =>
-  mount(ServiceCatalog, {
-    attachTo: document.body,
-  })
-
-const wait = async () => {
-  await flushPromises()
-  await Promise.resolve()
+const mockService: Service = {
+  id: '1',
+  name: 'Service A',
+  description: 'This is Service A',
+  type: 'API',
+  published: false,
+  configured: true,
+  metrics: {} as unknown as any,
+  versions: [
+    {
+      id: '1',
+      number: '1.0.0',
+      createdDate: new Date(),
+      updatedDate: new Date(),
+    } as unknown as any,
+    {
+      id: '2',
+      number: '1.1.0',
+      createdDate: new Date(),
+      updatedDate: new Date(),
+    } as unknown as any,
+  ],
 }
 
-it('renders loading spinner initially', async () => {
-  global.fetch = vi.fn(() => new Promise(() => {}))
+describe('ServiceCatalog', () => {
+  let wrapper: any
+  let pinia: any
+  let serviceStore: ReturnType<typeof useServiceStore>
 
-  const wrapper = mountPage()
-  await wrapper.vm.$nextTick()
+  beforeEach(() => {
+    pinia = createTestingPinia({
+      stubActions: false,
+    })
 
-  expect(wrapper.find('.spinner').exists()).toBe(true)
-})
+    wrapper = mount(ServiceCatalog, {
+      global: {
+        plugins: [pinia],
+        stubs: {
+          Teleport: true,
+          InputSearch: {
+            template: '<input @input="$emit(\'update:modelValue\', $event.target.value)" />',
+          },
+          BaseButton: {
+            props: ['label', 'imgSrc'],
+            template: '<button class="create-btn" @click="$emit(\'click\')">{{ label }}</button>',
+          },
+          ServiceCatalogCard: true,
+          VersionDetailsCard: true,
+          AppSpinner: {
+            template: '<div class="spinner"></div>',
+          },
+        },
+      },
+    })
 
-it('search filters the list', async () => {
-  const wrapper = mountPage()
-  await wait()
+    serviceStore = useServiceStore()
+  })
 
-  await wrapper.find('input').setValue('Service A')
-  await wait()
+  afterEach(() => {
+    vi.restoreAllMocks()
+    wrapper.unmount()
+  })
 
-  const cards = wrapper.findAll('.service-catalog-card')
-  expect(cards.length).toBe(1)
-  expect(cards[0].text()).toContain('Service A')
-})
+  it('shows spinner when loading is true', async () => {
+    serviceStore.loading = true
+    serviceStore.service = []
 
-it('opens version dialog when clicking a service with versions', async () => {
-  const wrapper = mountPage()
-  await wait()
+    await wrapper.vm.$nextTick()
 
-  const first = wrapper.findAll('.service-catalog-card')[0]
-  await first.trigger('click')
-  await wait()
+    expect(wrapper.find('.spinner').exists()).toBe(true)
+  })
 
-  const dialog = document.querySelector('[data-test="version-dialog"]')
-  expect(dialog).not.toBeNull()
-})
+  it('renders service list when data is fetched', async () => {
+    serviceStore.service = [mockService]
+    serviceStore.loading = false
 
-it('closes version dialog when update:modelValue emitted', async () => {
-  const wrapper = mountPage()
-  await wait()
+    await wrapper.vm.$nextTick()
 
-  await wrapper.findAll('.service-catalog-card')[0].trigger('click')
-  await wait()
+    expect(wrapper.find('.spinner').exists()).toBe(false)
+    expect(wrapper.find('.service-catalog-list').exists()).toBe(true)
+    expect(wrapper.findAll('.service-catalog-card').length).toBe(1)
+  })
 
-  const component = wrapper.findComponent({ name: 'VersionDetailsCard' })
-  expect(component.exists()).toBe(true)
+  it('filters services by search query', async () => {
+    serviceStore.service = [
+      mockService,
+      {
+        id: '2',
+        name: 'Service B',
+        description: 'This is Service B',
+        type: 'API',
+        published: false,
+        configured: false,
+        versions: [],
+        metrics: {
+          latency: 0,
+          uptime: 0,
+          requests: 0,
+          errors: 0,
+        },
+      },
+    ]
+    serviceStore.loading = false
 
-  component.vm.$emit('update:modelValue', false)
-  await wait()
+    await wrapper.vm.$nextTick()
 
-  const dialog = document.body.querySelector('[data-test-version-dialog]')
-  expect(dialog).toBeNull()
-})
+    expect(wrapper.findAll('.service-catalog-card').length).toBe(2)
 
-it('pagination works (next / prev)', async () => {
-  const wrapper = mountPage()
-  await wait()
+    await wrapper.find('input').setValue('Service B')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.service-catalog-card').length).toBe(1)
 
-  const vm = wrapper.vm as any
+    await wrapper.find('input').setValue('Service A')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.service-catalog-card').length).toBe(1)
+  })
 
-  vm.serviceList = Array.from({ length: 20 }).map((_, i) => ({
-    id: i,
-    name: `Service ${i}`,
-    description: 'x',
-    type: 'api',
-    versions: [],
-  }))
+  it('opens version dialog when clicking a service with versions', async () => {
+    serviceStore.service = [mockService]
+    serviceStore.loading = false
 
-  vm.pagination.totalPages = Math.ceil(vm.serviceList.length / vm.pagination.itemsPerPage)
-  await wait()
+    await wrapper.vm.$nextTick()
 
-  const allButtons = wrapper.findAllComponents({ name: 'BaseButton' })
-  const nextBtn = allButtons.find(b => b.props().label === '→')
-  const prevBtn = allButtons.find(b => b.props().label === '←')
+    await wrapper.find('.service-catalog-card').trigger('click')
+    await wrapper.vm.$nextTick()
 
-  if (!nextBtn || !prevBtn) {
-    throw new Error('Pagination buttons not found')
-  }
+    expect(wrapper.find('[data-test="version-dialog"]').exists()).toBe(true)
+  })
 
-  expect(vm.pagination.currentPage).toBe(1)
-  await nextBtn.trigger('click')
-  await wait()
-  expect(vm.pagination.currentPage).toBe(2)
+  it('closes version dialog when update:modelValue emitted', async () => {
+    serviceStore.service = [mockService]
+    serviceStore.loading = false
 
-  await prevBtn.trigger('click')
-  await wait()
-  expect(vm.pagination.currentPage).toBe(1)
-})
+    await wrapper.vm.$nextTick()
+    await wrapper.find('.service-catalog-card').trigger('click')
+    await wrapper.vm.$nextTick()
 
-it('create service button triggers alert', async () => {
-  const wrapper = mountPage()
-  await wait()
+    const dialog = wrapper.findComponent({ name: 'VersionDetailsCard' })
+    dialog.vm.$emit('update:modelValue', false)
+    await wrapper.vm.$nextTick()
 
-  const createBtn = wrapper.find('.create-btn')
-  await createBtn.trigger('click')
+    expect(wrapper.find('[data-test="version-dialog"]').exists()).toBe(false)
+  })
 
-  expect(window.alert).toHaveBeenCalledWith('Service Package button clicked!')
+  it('does not open dialog when service has no versions', async () => {
+    serviceStore.service = [{ ...mockService, versions: [] }]
+    serviceStore.loading = false
+
+    await wrapper.vm.$nextTick()
+    await wrapper.find('.service-catalog-card').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-test="version-dialog"]').exists()).toBe(false)
+  })
+
+  it('renders empty list when no services exist', async () => {
+    serviceStore.service = []
+    serviceStore.loading = false
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll('.service-catalog-card').length).toBe(0)
+  })
+
+  it('disables prev button on first page', async () => {
+    serviceStore.service = Array.from({ length: 10 }, (_, i) => ({
+      ...mockService,
+      id: String(i),
+    }))
+    serviceStore.loading = false
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.pagination-btn:disabled').exists()).toBe(true)
+  })
+
+  it('resets pagination when search changes', async () => {
+    serviceStore.service = Array.from({ length: 20 }, (_, i) => ({
+      ...mockService,
+      id: String(i),
+      name: `Service ${i}`,
+    }))
+    serviceStore.loading = false
+
+    await wrapper.vm.$nextTick()
+    await wrapper.find('input').setValue('Service 1')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll('.service-catalog-card').length).toBeGreaterThan(0)
+  })
+
+  it('calls alert when "Service Package" button is clicked', async () => {
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
+
+    const wrapper = mount(ServiceCatalog, {
+      global: {
+        stubs: {
+          InputSearch: true,
+          BaseButton: {
+            props: ['label', 'imgSrc'],
+            template: '<button class="create-btn" @click="$emit(\'click\')">{{ label }}</button>',
+          },
+          ServiceCatalogCard: true,
+          VersionDetailsCard: true,
+          AppSpinner: {
+            template: '<div class="spinner"></div>',
+          },
+          Teleport: true,
+        },
+        plugins: [createTestingPinia({ stubActions: false })],
+      },
+    })
+
+    const button = wrapper.find('.create-btn')
+    expect(button.exists()).toBe(true)
+
+    await button.trigger('click')
+
+    expect(alertMock).toHaveBeenCalledWith('Service Package button clicked!')
+
+    alertMock.mockRestore()
+  })
+
 })

@@ -1,4 +1,4 @@
-import { computed, ref, type Ref, type ComputedRef } from 'vue'
+import { computed, ref, watch, type Ref, type ComputedRef } from 'vue'
 
 export function usePagination<T>(data: Ref<T[]>, pageSize: Ref<number>): {
   currentPage: Ref<number>
@@ -20,8 +20,11 @@ export function usePagination<T>(data: Ref<T[]>, pageSize: Ref<number>): {
     return endIndex > data.value.length ? data.value.length : endIndex
   })
   const currentData = computed(() => data.value.slice(startIndex.value, endIndex.value))
-  const disablePrev = computed(() => currentPage.value === 1)
-  const disableNext = computed(() => currentPage.value === totalPages.value)
+  const disablePrev = computed(() => currentPage.value <= 1)
+  const disableNext = computed(() => {
+    if (totalPages.value === 0) return true
+    return currentPage.value >= totalPages.value
+  })
 
   const handleNextPage = () => {
     if (currentPage.value < totalPages.value) {
@@ -38,6 +41,15 @@ export function usePagination<T>(data: Ref<T[]>, pageSize: Ref<number>): {
   const resetPage = () => {
     currentPage.value = 1
   }
+
+  watch(
+    () => data.value.length,
+    () => {
+      if (currentPage.value > totalPages.value) {
+        resetPage()
+      }
+    },
+  )
 
   return {
     currentPage,

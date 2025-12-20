@@ -8,7 +8,7 @@
         >
         {{ getStatus }}
       </div>
-      <div
+      1<div
         v-if="versionCount"
         class="versions bg-chip-primary text-chip-text-primary"
       >

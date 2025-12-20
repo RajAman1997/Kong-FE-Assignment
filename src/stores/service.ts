@@ -2,14 +2,13 @@ import { defineStore } from 'pinia'
 import { apiClient } from '@/services/apiClient'
 import { endpoints } from '@/constants/api-url'
 import type { Service } from '@/types/service.interface'
-import { ref } from 'vue'
 
 export const useServiceStore = defineStore({
   id: 'service',
   state: () => ({
-    service: ref<Service[]>([]),
-    loading: ref(false),
-    error: ref(''),
+    service: [] as Service[],
+    loading: false,
+    error: '',
   }),
   getters: {
     getService: (state) => state.service,
