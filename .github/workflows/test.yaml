@@ -20,6 +20,15 @@ jobs:
         with:
           force-install: true
 
+      - name: Clean old build artifacts
+        shell: bash
+        run: |
+          echo "Cleaning old build artifacts..."
+          rm -rf dist
+          rm -rf node_modules/.vite
+          find src -name "*.vue.ts" -type f -delete
+
+
       - name: Build
         run: pnpm build
 

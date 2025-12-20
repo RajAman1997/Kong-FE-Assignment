@@ -2,30 +2,31 @@
   <div class="search-wrapper">
     <span class="search-icon" />
     <input
-      v-model="inputModel"
+      v-model="model"
       class="search-input"
-      name="search"
       placeholder="Search"
-      type="text"
-      @input="$emit('input', inputModel)"
     >
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 
 defineOptions({
   name: 'InputSearch',
 })
 
-defineEmits(['input'])
-
-const inputModel = ref('')
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+}>()
 const props = defineProps<{
   modelValue: string
 }>()
-inputModel.value = props.modelValue
+
+const model = computed({
+  get: () => props.modelValue,
+  set: value => emit('update:modelValue', value),
+})
 </script>
 
 <style lang="scss" scoped>

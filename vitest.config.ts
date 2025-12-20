@@ -8,6 +8,13 @@ export default mergeConfig(
     test: {
       globals: true,
       environment: 'jsdom',
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html'],
+        all: true,
+        include: ['src/**/*.vue', 'src/**/*.ts'],
+        exclude: ['**/*.spec.ts', 'node_modules/', 'main.ts', 'vue-test-utils.d.ts', 'router/**', 'src/types/**'],
+      },
       include: ['**/*.spec.ts'],
       exclude: [
         './dist/**',

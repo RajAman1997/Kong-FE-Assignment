@@ -8,7 +8,7 @@
         >
         {{ getStatus }}
       </div>
-      <div
+      1<div
         v-if="versionCount"
         class="versions bg-chip-primary text-chip-text-primary"
       >
@@ -95,9 +95,13 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue'
+import { computed } from 'vue'
 import type { Service, Version } from '@/types/service.interface'
 import { Status } from '@/constants/status.enum'
+
+defineOptions({
+  name: 'ServiceCatalogCard',
+})
 
 const props = defineProps<{
   service: Service
