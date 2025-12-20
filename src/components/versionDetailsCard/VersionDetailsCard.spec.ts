@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import VersionDetailsCard from '@/components/versionDetailsCard/versionDetailsCard.vue'
+import VersionDetailsCard from '@/components/versionDetailsCard/VersionDetailsCard.vue'
 import type { Service } from '@/types/service.interface'
 
 const mockService: Service = {
