@@ -8,6 +8,7 @@
     "importHelpers": true,
     "sourceMap": true,
     "baseUrl": ".",
+    "forceConsistentCasingInFileNames": true,
     "lib": [
       "esnext",
       "dom",
